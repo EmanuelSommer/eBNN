@@ -8,9 +8,13 @@ import pandas as pd
 
 # %%
 predsaver_obj = jnp.load("results/vit_imagenette_psmile0_predsaver_sampling.npz", allow_pickle=True)
+predsaver_obj_de = jnp.load("results/vit_imagenette_psmile0_predsaver_de.npz", allow_pickle=True)
 # %%
 target = predsaver_obj["target"]
 target.shape
+# %%
+pred_dist_de = predsaver_obj_de["pred_dist"]
+pred_dist_de.shape # (num_chains, 1, num_data, num_classes)
 # %%
 pred_dist = predsaver_obj["pred_dist"]
 pred_dist.shape # (num_chains, num_samples, num_data, num_classes)
