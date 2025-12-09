@@ -14,6 +14,11 @@ from tqdm import tqdm
 # %% ViT on imagenette with psmile
 predsaver_obj = jnp.load("results/vit_imagenette_psmile0_predsaver_sampling.npz", allow_pickle=True)
 predsaver_obj_de = jnp.load("results/vit_imagenette_psmile0_predsaver_de.npz", allow_pickle=True)
+exp_id = "vit_imagenette_psmile0"
+# %% Resnet7 on cifar10 with psmile
+predsaver_obj = jnp.load("results/resnet7_cifar10_psmile0_predsaver_sampling.npz", allow_pickle=True)
+predsaver_obj_de = jnp.load("results/resnet7_cifar10_psmile0_predsaver_de.npz", allow_pickle=True)
+exp_id = "resnet7_cifar10_psmile0"
 # %%
 target = predsaver_obj["target"]
 target.shape
@@ -104,8 +109,8 @@ def get_evalue_from_logprops(logprob_up_to_k, logprob_reference):
     return e_values
 
 # %%
-# logprob_reference = get_logprob_up_to_k(pred_dist=pred_dist_de_val, target=target_val, k=pred_dist_de_val.shape[1]) # (num_chains,)
-logprob_reference = get_logprob_up_to_k(pred_dist=pred_dist_val, target=target_val, k=1) # (num_chains,)
+# logprob_reference = get_logprob_up_to_k(pred_dist=pred_dist_de_val, target=target_val, k=pred_dist_de_val.shape[1]) # de reference
+logprob_reference = get_logprob_up_to_k(pred_dist=pred_dist_val, target=target_val, k=1) # first sample reference
 
 # now build up the e-values chainwise for increasing k
 max_k = pred_dist_val.shape[1]
@@ -130,14 +135,23 @@ evalues_chainwise_df = evalues_chainwise_df.rename(columns={"index": "num_sample
 evalues_chainwise_df["chain"] = evalues_chainwise_df["chain"].astype(float)
 evalues_chainwise_df
 # %%
-(pn.ggplot(evalues_chainwise_df) +
+plot = (pn.ggplot(evalues_chainwise_df) +
  pn.aes(x="num_samples", y="e_value", group="chain") +
  pn.geom_line(alpha=0.7, color="#324b94") +
  pn.geom_hline(yintercept=100, linetype="dashed", color="#4c915c", size=1) +
  pn.scale_y_log10(breaks=[0, 1, 100], labels=["0", "1", "100 ($\\alpha = 0.01$)"]) +
  pn.labs(title="", y="E-value (log scale)", x="Number of samples") +
- pn.theme_minimal()
+ pn.theme_minimal() + 
+ pn.theme(
+    figure_size=(6,4),
+    text=pn.element_text(size=11),
+    axis_text=pn.element_text(size=10)
+ )
 )
+
+# save the plot as pdf
+plot.save(f"results/plots/{exp_id}_evalues_chainwise.pdf", dpi=300)
+plot
 
 # %% now calculate the early stopping sample sizes per chain for alphas in [0.01, 0.05, 0.1]
 alphas = [0.001,0.01, 0.05, 0.1]
@@ -174,14 +188,23 @@ early_stopping_long_df = pd.melt(
 )
 early_stopping_long_df["alpha"] = early_stopping_long_df["alpha"].astype(float)
 early_stopping_long_df["early_stopping_samples"] = early_stopping_long_df["early_stopping_samples"].astype(int)
-(pn.ggplot(early_stopping_long_df) +
+plot = (pn.ggplot(early_stopping_long_df) +
  pn.aes(x="early_stopping_samples", fill="factor(alpha)") +
  pn.geom_histogram(bins=25, position="dodge", alpha=0.5) +
 #  pn.geom_density(alpha=0.7) +
 #  pn.geom_rug(alpha=0.5) +
  pn.labs(title="", x="Early Stopping sample size", y="Count", fill="$\\alpha$") +
- pn.theme_minimal()
+ pn.theme_minimal() +
+ pn.theme(
+    figure_size=(6,4),
+    text=pn.element_text(size=11),
+    axis_text=pn.element_text(size=10)
+ )
 )
+
+# save the plot as pdf
+plot.save(f"results/plots/{exp_id}_early_stopping_sample_sizes.pdf", dpi=300)
+plot    
 
 # %% now based on the early stopping sample sizes select samples only that have an evalue exceeding the threshold and compute test accuracy and lppd
 # skip if early stopping sample size is max_k (no early stopping) then report None
@@ -305,7 +328,7 @@ de_band_df = (
     .drop(columns="_k")
 )
 
-(pn.ggplot(summary_early_stopping_long_df) +
+plot = (pn.ggplot(summary_early_stopping_long_df) +
  pn.aes(x="alpha", y="mean_value") +
  pn.geom_hline(data=de_lines_df, mapping=pn.aes(yintercept="de_mean"),
                linetype="dashed", color="#ff7f0e", size=1, inherit_aes=False) +
@@ -317,9 +340,15 @@ de_band_df = (
  pn.facet_wrap("~ metric_label", scales="free_y", ncol=2) +
  pn.labs(title="", x="Early stopping level ($\\alpha$)", y="Value ($\\pm$ SD)", color="Mean early\nstopping samples") +
  pn.theme_minimal() +
- pn.theme(legend_position="bottom") +
+ pn.theme(legend_position="bottom", figure_size=(8,4),
+    text=pn.element_text(size=11),
+    axis_text=pn.element_text(size=10)) +
  pn.scale_color_gradient(low="#e04f93", high="#032459")
 )
+
+# save the plot as pdf
+plot.save(f"results/plots/{exp_id}_early_stopping_summary.pdf", dpi=300)
+plot
 
 # %%
 ########################################################################################
@@ -409,13 +438,21 @@ ensemble_results_long_df["ensemble_members"] = pd.to_numeric(ensemble_results_lo
 ensemble_results_long_df["value"] = pd.to_numeric(ensemble_results_long_df["value"], errors="coerce")
 
 # use a scatterplot with lines connecting the points
-(pn.ggplot(ensemble_results_long_df) +
+plot = (pn.ggplot(ensemble_results_long_df) +
  pn.aes(x="alpha", y="value") +
  pn.geom_point(pn.aes(size="ensemble_members"), alpha=0.8, color="#324b94") +
  pn.geom_line(group=1, linetype="dashed", color="#324b94", alpha=0.5) +
  pn.facet_wrap("~ metric_label", scales="free_y", ncol=2) +
  pn.labs(title="", x="Early stopping level ($\\alpha$)", y="Value", size="Ensemble members") +
  pn.theme_minimal() +
- pn.theme(legend_position="bottom", figure_size=(6,3))
+ pn.theme(
+    legend_position="bottom", figure_size=(7,3),
+    text=pn.element_text(size=11),
+    axis_text=pn.element_text(size=10)
 )
+)
+
+# save the plot as pdf
+plot.save(f"results/plots/{exp_id}_ensemble_results_early_stopping.pdf", dpi=300)
+plot
 # %%
