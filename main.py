@@ -16,9 +16,9 @@ predsaver_obj = jnp.load("results/vit_imagenette_psmile0_predsaver_sampling.npz"
 predsaver_obj_de = jnp.load("results/vit_imagenette_psmile0_predsaver_de.npz", allow_pickle=True)
 exp_id = "vit_imagenette_psmile0"
 # %% Resnet7 on cifar10 with psmile
-predsaver_obj = jnp.load("results/resnet7_cifar10_psmile0_predsaver_sampling.npz", allow_pickle=True)
-predsaver_obj_de = jnp.load("results/resnet7_cifar10_psmile0_predsaver_de.npz", allow_pickle=True)
-exp_id = "resnet7_cifar10_psmile0"
+# predsaver_obj = jnp.load("results/resnet7_cifar10_psmile0_predsaver_sampling.npz", allow_pickle=True)
+# predsaver_obj_de = jnp.load("results/resnet7_cifar10_psmile0_predsaver_de.npz", allow_pickle=True)
+# exp_id = "resnet7_cifar10_psmile0"
 # %%
 target = predsaver_obj["target"]
 target.shape
@@ -176,7 +176,7 @@ plot.save(f"results/plots/{exp_id}_evalues_chainwise.pdf", dpi=300)
 plot
 
 # %% now calculate the early stopping sample sizes per chain for alphas in [0.01, 0.05, 0.1]
-alphas = [0.001,0.01, 0.05, 0.1]
+alphas = [0.001, 0.01, 0.05]
 early_stopping_samples = {alpha: [] for alpha in alphas}
 for chain_idx in range(evalues_chainwise.shape[0]):
     e_values_chain = evalues_chainwise[chain_idx, :]  # (max_k,)
