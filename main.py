@@ -103,21 +103,43 @@ def get_logprob_up_to_k(pred_dist, target, k):
     logprob_up_to_k = jnp.sum(logprob_pw_lme, axis=-1)  # (num_chains,)
     return logprob_up_to_k
 
+def get_logprob_sum_up_to_k(pred_dist, target, k):
+    # note everything is done per chain
+    # use all samples up to k
+    pred_dist_k = pred_dist[:, :k, :, :]  # (num_chains, k, num_data, num_classes)
+    # compute pointwise the logprob
+    logprob_pw = bmetrics.lppd_pointwise(pred_dist=pred_dist_k, y=target, task=Task.CLASSIFICATION)
+    # sum over samples
+    logprob_pw_sum = jnp.sum(logprob_pw, axis=1)  # (num_chains, num_data)
+    # sum over data points
+    logprob_sum_up_to_k = jnp.sum(logprob_pw_sum, axis=-1)  # (num_chains,)
+    return logprob_sum_up_to_k
+
+def get_logprob_at_k(pred_dist, target, k):
+    # note everything is done per chain
+    # use only sample at k-1 (0-indexed)
+    pred_dist_k = pred_dist[:, k-1:k, :, :]  # (num_chains, 1, num_data, num_classes)
+    # compute pointwise the logprob
+    logprob_pw = bmetrics.lppd_pointwise(pred_dist=pred_dist_k, y=target, task=Task.CLASSIFICATION)
+    # sum over data points
+    logprob_at_k = jnp.sum(logprob_pw, axis=-1)  # (num_chains,)
+    return logprob_at_k
+
 @jax.jit
-def get_evalue_from_logprops(logprob_up_to_k, logprob_reference):
-    e_values = jnp.exp(logprob_up_to_k - logprob_reference)
+def get_evalue_from_logprops(logprob_at_k, logprob_reference, k):
+    e_values = jnp.exp(logprob_at_k - logprob_reference * (k-1+1e-10) + 1e-10) # (num_chains,)
     return e_values
 
 # %%
 # logprob_reference = get_logprob_up_to_k(pred_dist=pred_dist_de_val, target=target_val, k=pred_dist_de_val.shape[1]) # de reference
-logprob_reference = get_logprob_up_to_k(pred_dist=pred_dist_val, target=target_val, k=1) # first sample reference
+logprob_reference = get_logprob_sum_up_to_k(pred_dist=pred_dist_val, target=target_val, k=1) # first sample reference
 
 # now build up the e-values chainwise for increasing k
 max_k = pred_dist_val.shape[1]
 evalues_chainwise = []
 for k in tqdm(range(1, max_k + 1)):
-    logprob_up_to_k = get_logprob_up_to_k(pred_dist=pred_dist_val, target=target_val, k=k)  # (num_chains,)
-    e_values = get_evalue_from_logprops(logprob_up_to_k, logprob_reference)  # (num_chains,)
+    logprob_at_k = get_logprob_sum_up_to_k(pred_dist=pred_dist_val, target=target_val, k=k)  # (num_chains,)
+    e_values = get_evalue_from_logprops(logprob_at_k, logprob_reference, k)  # (num_chains,)
     evalues_chainwise.append(e_values)
 evalues_chainwise = jnp.stack(evalues_chainwise, axis=1)  # (num_chains, max_k)
 print("E-values chainwise shape:", evalues_chainwise.shape)
