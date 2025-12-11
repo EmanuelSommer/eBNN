@@ -10,15 +10,16 @@ from tqdm import tqdm
 ########################################################################################
 # Load & prep data + baseline calculations
 ########################################################################################
-
+# %%
+reference = "first_sample"  # "de" or "first_sample"
 # %% ViT on imagenette with psmile
-predsaver_obj = jnp.load("results/vit_imagenette_psmile0_predsaver_sampling.npz", allow_pickle=True)
-predsaver_obj_de = jnp.load("results/vit_imagenette_psmile0_predsaver_de.npz", allow_pickle=True)
-exp_id = "vit_imagenette_psmile0"
+# predsaver_obj = jnp.load("results/vit_imagenette_psmile0_predsaver_sampling.npz", allow_pickle=True)
+# predsaver_obj_de = jnp.load("results/vit_imagenette_psmile0_predsaver_de.npz", allow_pickle=True)
+# exp_id = "vit_imagenette_psmile0"
 # %% Resnet7 on cifar10 with psmile
-# predsaver_obj = jnp.load("results/resnet7_cifar10_psmile0_predsaver_sampling.npz", allow_pickle=True)
-# predsaver_obj_de = jnp.load("results/resnet7_cifar10_psmile0_predsaver_de.npz", allow_pickle=True)
-# exp_id = "resnet7_cifar10_psmile0"
+predsaver_obj = jnp.load("results/resnet7_cifar10_psmile0_predsaver_sampling.npz", allow_pickle=True)
+predsaver_obj_de = jnp.load("results/resnet7_cifar10_psmile0_predsaver_de.npz", allow_pickle=True)
+exp_id = "resnet7_cifar10_psmile0"
 # %%
 target = predsaver_obj["target"]
 target.shape
@@ -131,8 +132,10 @@ def get_evalue_from_logprops(logprob_at_k, logprob_reference, k):
     return e_values
 
 # %%
-# logprob_reference = get_logprob_up_to_k(pred_dist=pred_dist_de_val, target=target_val, k=pred_dist_de_val.shape[1]) # de reference
-logprob_reference = get_logprob_sum_up_to_k(pred_dist=pred_dist_val, target=target_val, k=1) # first sample reference
+if reference == "de":
+    logprob_reference = get_logprob_up_to_k(pred_dist=pred_dist_de_val, target=target_val, k=pred_dist_de_val.shape[1]) # de reference
+else:
+    logprob_reference = get_logprob_sum_up_to_k(pred_dist=pred_dist_val, target=target_val, k=1) # first sample reference
 
 # now build up the e-values chainwise for increasing k
 max_k = pred_dist_val.shape[1]
@@ -172,7 +175,7 @@ plot = (pn.ggplot(evalues_chainwise_df) +
 )
 
 # save the plot as pdf
-plot.save(f"results/plots/{exp_id}_evalues_chainwise.pdf", dpi=300)
+plot.save(f"results/plots/{exp_id}_{reference}_evalues_chainwise.pdf", dpi=300)
 plot
 
 # %% now calculate the early stopping sample sizes per chain for alphas in [0.01, 0.05, 0.1]
@@ -225,7 +228,7 @@ plot = (pn.ggplot(early_stopping_long_df) +
 )
 
 # save the plot as pdf
-plot.save(f"results/plots/{exp_id}_early_stopping_sample_sizes.pdf", dpi=300)
+plot.save(f"results/plots/{exp_id}_{reference}_early_stopping_sample_sizes.pdf", dpi=300)
 plot    
 
 # %% now based on the early stopping sample sizes select samples only that have an evalue exceeding the threshold and compute test accuracy and lppd
@@ -300,6 +303,8 @@ summary_early_stopping_df
 mean_early_stopping_samples = results_early_stopping_df.groupby("alpha")["early_stopping_sample"].mean().reset_index()
 mean_early_stopping_samples = mean_early_stopping_samples.rename(columns={"early_stopping_sample": "mean_early_stopping_samples"})
 summary_early_stopping_df = summary_early_stopping_df.merge(mean_early_stopping_samples, on="alpha", how="left")
+# save as csv
+summary_early_stopping_df.to_csv(f"results/{exp_id}_{reference}_early_stopping_summary.csv", index=False)
 summary_early_stopping_df
 
 # %% visualize the summary results with facet wrap for accuracy and lppd
@@ -369,7 +374,7 @@ plot = (pn.ggplot(summary_early_stopping_long_df) +
 )
 
 # save the plot as pdf
-plot.save(f"results/plots/{exp_id}_early_stopping_summary.pdf", dpi=300)
+plot.save(f"results/plots/{exp_id}_{reference}_early_stopping_summary.pdf", dpi=300)
 plot
 
 # %%
@@ -431,6 +436,8 @@ ensemble_results_early_stopping.append({
     "ensemble_members": pred_dist_de_test.shape[0] * pred_dist_de_test.shape[1]
 })
 ensemble_results_early_stopping_df = pd.DataFrame(ensemble_results_early_stopping)
+# save as csv
+ensemble_results_early_stopping_df.to_csv(f"results/{exp_id}_{reference}_ensemble_results_early_stopping.csv", index=False)
 ensemble_results_early_stopping_df
 # %%
 # Visualize ensemble results
@@ -475,6 +482,6 @@ plot = (pn.ggplot(ensemble_results_long_df) +
 )
 
 # save the plot as pdf
-plot.save(f"results/plots/{exp_id}_ensemble_results_early_stopping.pdf", dpi=300)
+plot.save(f"results/plots/{exp_id}_{reference}_ensemble_results_early_stopping.pdf", dpi=300)
 plot
 # %%
