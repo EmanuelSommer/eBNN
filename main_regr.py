@@ -6,14 +6,11 @@ import jax.numpy as jnp
 import pandas as pd
 import jax
 from tqdm import tqdm
-
-from main_class import get_pred_labels
-
 # %%
 ########################################################################################
 # Load & prep data + baseline calculations
 ########################################################################################
-reference = "de"  # "de" or "first_sample"
+reference = "first_sample"  # "de" or "first_sample"
 
 # %% ViT on imagenette with psmile
 predsaver_obj = jnp.load("results/mlp_bike_mile_predsaver_sampling.npz", allow_pickle=True)
@@ -65,7 +62,6 @@ full_chainwise_rmse = [
 ]
 print("Full ensemble RMSE:", float(full_ensemble_rmse))
 print("Chainwise RMSE:", [float(rmse) for rmse in full_chainwise_rmse])
-
 # %% now lppd
 full_ensemble_lppd = bmetrics.lppd(
     bmetrics.lppd_pointwise(pred_dist=pred_dist_test, y=target_test, 
@@ -90,6 +86,13 @@ chainwise_lppd_de = [
     for chain_idx in range(pred_dist_de_test.shape[0])
 ]
 print("Chainwise LPPD DE:", [float(lppd) for lppd in chainwise_lppd_de])
+# save mean chainwise lppd de as csv
+mean_chainwise_lppd_de = jnp.mean(jnp.array(chainwise_lppd_de))
+print("Mean Chainwise LPPD DE:", float(mean_chainwise_lppd_de))
+mean_chainwise_lppd_de_df = pd.DataFrame({
+    "mean_chainwise_lppd_de": [float(mean_chainwise_lppd_de)]
+})
+mean_chainwise_lppd_de_df.to_csv(f"results/{exp_id}_{reference}_mean_chainwise_lppd_de.csv", index=False)
 # %%
 chainwise_rmse_de = [
     bmetrics.rmse(
@@ -141,7 +144,7 @@ def get_logprob_at_k(pred_dist, target, k):
 
 @jax.jit
 def get_evalue_from_logprops(logprob_at_k, logprob_reference, k):
-    e_values = jnp.exp(logprob_at_k - logprob_reference * (k-1+1e-10) + 1e-10) # (num_chains,)
+    e_values = jnp.exp(logprob_at_k - logprob_reference * (k+1e-10) + 1e-10) # (num_chains,)
     return e_values
 
 # %%
@@ -354,7 +357,7 @@ de_lppd_std = jnp.std(jnp.array(chainwise_lppd_de)).item()
 de_rmse_mean = jnp.mean(jnp.array(chainwise_rmse_de)).item()
 de_rmse_std = jnp.std(jnp.array(chainwise_rmse_de)).item()
 de_lines_df = pd.DataFrame({
-    "metric_label": ["Test LPPD", "Test Accuracy"],
+    "metric_label": ["Test LPPD", "Test RMSE"],
     "de_mean": [de_lppd_mean, de_rmse_mean],
     "de_ymin": [de_lppd_mean - de_lppd_std, de_rmse_mean - de_rmse_std],
     "de_ymax": [de_lppd_mean + de_lppd_std, de_rmse_mean + de_rmse_std],

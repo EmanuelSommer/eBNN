@@ -20,6 +20,10 @@ reference = "first_sample"  # "de" or "first_sample"
 predsaver_obj = jnp.load("results/resnet7_cifar10_psmile0_predsaver_sampling.npz", allow_pickle=True)
 predsaver_obj_de = jnp.load("results/resnet7_cifar10_psmile0_predsaver_de.npz", allow_pickle=True)
 exp_id = "resnet7_cifar10_psmile0"
+# %% MLP on income with mile
+# predsaver_obj = jnp.load("results/mlp_income_mile_predsaver_sampling.npz", allow_pickle=True)
+# predsaver_obj_de = jnp.load("results/mlp_income_mile_predsaver_de.npz", allow_pickle=True)
+# exp_id = "mlp_income_mile"
 # %%
 target = predsaver_obj["target"]
 target.shape
@@ -79,6 +83,13 @@ chainwise_lppd_de = [
     for chain_idx in range(pred_dist_de_test.shape[0])
 ]
 print("Chainwise LPPD DE:", [float(lppd) for lppd in chainwise_lppd_de])
+# save mean chainwise lppd de as csv
+mean_chainwise_lppd_de = jnp.mean(jnp.array(chainwise_lppd_de))
+print("Mean Chainwise LPPD DE:", float(mean_chainwise_lppd_de))
+mean_chainwise_lppd_de_df = pd.DataFrame({
+    "mean_chainwise_lppd_de": [float(mean_chainwise_lppd_de)]
+})
+mean_chainwise_lppd_de_df.to_csv(f"results/{exp_id}_{reference}_mean_chainwise_lppd_de.csv", index=False)
 # %%
 chainwise_acc_de = bmetrics.accuracy(
     pred=get_pred_labels(pred_dist_de_test),
@@ -128,7 +139,7 @@ def get_logprob_at_k(pred_dist, target, k):
 
 @jax.jit
 def get_evalue_from_logprops(logprob_at_k, logprob_reference, k):
-    e_values = jnp.exp(logprob_at_k - logprob_reference * (k-1+1e-10) + 1e-10) # (num_chains,)
+    e_values = jnp.exp(logprob_at_k - logprob_reference * (k+1e-10) + 1e-10) # (num_chains,)
     return e_values
 
 # %%
