@@ -10,7 +10,7 @@ from tqdm import tqdm
 ########################################################################################
 # Load & prep data + baseline calculations
 ########################################################################################
-reference = "first_sample"  # "de" or "first_sample"
+reference = "de"  # "de" or "first_sample"
 
 # %% ViT on imagenette with psmile
 predsaver_obj = jnp.load("results/mlp_bike_mile_predsaver_sampling.npz", allow_pickle=True)

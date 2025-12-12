@@ -13,13 +13,13 @@ from tqdm import tqdm
 # %%
 reference = "first_sample"  # "de" or "first_sample"
 # %% ViT on imagenette with psmile
-# predsaver_obj = jnp.load("results/vit_imagenette_psmile0_predsaver_sampling.npz", allow_pickle=True)
-# predsaver_obj_de = jnp.load("results/vit_imagenette_psmile0_predsaver_de.npz", allow_pickle=True)
-# exp_id = "vit_imagenette_psmile0"
+predsaver_obj = jnp.load("results/vit_imagenette_psmile0_predsaver_sampling.npz", allow_pickle=True)
+predsaver_obj_de = jnp.load("results/vit_imagenette_psmile0_predsaver_de.npz", allow_pickle=True)
+exp_id = "vit_imagenette_psmile0"
 # %% Resnet7 on cifar10 with psmile
-predsaver_obj = jnp.load("results/resnet7_cifar10_psmile0_predsaver_sampling.npz", allow_pickle=True)
-predsaver_obj_de = jnp.load("results/resnet7_cifar10_psmile0_predsaver_de.npz", allow_pickle=True)
-exp_id = "resnet7_cifar10_psmile0"
+# predsaver_obj = jnp.load("results/resnet7_cifar10_psmile0_predsaver_sampling.npz", allow_pickle=True)
+# predsaver_obj_de = jnp.load("results/resnet7_cifar10_psmile0_predsaver_de.npz", allow_pickle=True)
+# exp_id = "resnet7_cifar10_psmile0"
 # %% MLP on income with mile
 # predsaver_obj = jnp.load("results/mlp_income_mile_predsaver_sampling.npz", allow_pickle=True)
 # predsaver_obj_de = jnp.load("results/mlp_income_mile_predsaver_de.npz", allow_pickle=True)
