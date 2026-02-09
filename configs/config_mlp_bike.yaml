@@ -1,0 +1,108 @@
+saving_dir: results/tabular/bike/mile
+experiment_name: regr_mile
+data:
+  path: data/bikesharing.data
+  source: local
+  data_type: tabular
+  task: regr
+  target_column: null
+  target_len: 1
+  features: null
+  datapoint_limit: null
+  flatten: false
+  normalize: true
+  train_split: 0.7
+  valid_split: 0.1
+  test_split: 0.2
+  augment: identity
+model:
+  model: FCN
+  hidden_structure:
+  - 16
+  - 16
+  - 16
+  - 16
+  - 2
+  activation: relu
+  use_bias: true
+training:
+  warmstart:
+    include: true
+    optimizer_config:
+      name: adamw
+      parameters:
+        learning_rate: 0.005
+        weight_decay: 0.005
+      lr_schedule: null
+      lr_schedule_parameters: null
+    warmstart_exp_dir: null
+    max_epochs: 400
+    batch_size: 64
+    patience: 10
+    permutation_warmstart: false
+  sampler:
+    name: mclmc
+    epoch_wise_sampling: false
+    params_frozen: []
+    batch_size: null
+    burn_in: 0
+    warmup_steps: 50000
+    n_chains: 16
+    n_samples: 10000
+    use_warmup_as_init: true
+    n_thinning: 10
+    diagonal_preconditioning: false
+    desired_energy_var: 1.0
+    desired_energy_var_start: 0.5
+    desired_energy_var_end: 0.1
+    trust_in_estimate: 1.5
+    num_effective_samples: 100
+    step_size_init: 0.005
+    step_size: 0.0001
+    mdecay: 0.05
+    n_integration_steps: 1
+    momentum_resampling: 0.0
+    temperature: 1.0
+    smile_tuning:
+      reset_prob: 0.99
+      adaption_prob: 0.05
+      adaption_strength: 0.02
+      smoothing_factor: 0.01
+    running_avg_factor: 0.0
+    keep_warmup: false
+    prior_config:
+      name: StandardNormal
+      parameters: {}
+    scheduler_config_warm:
+      name: null
+      exploration: 0.25
+      init_step_size: 0.001
+      target_step_size: 0.0
+      n_cycles: 4
+    scheduler_config_samp:
+      name: null
+      exploration: 0.25
+      init_step_size: 0.001
+      target_step_size: 0.0
+      n_cycles: 4
+  tokenizer:
+    tokenizer: CustomBPE
+    parameters: {}
+rng: 1
+logging: true
+logging_level: INFO
+evaluations:
+- PredPerf
+- PredSaver
+- Lppd
+- Calibration
+evaluation_args:
+  phases:
+  - ensemble_initialization
+  - sampling
+  samples_batch_size: 100
+  kappa: 0.0
+  nominal_coverages:
+  - 0.8
+  - 0.9
+  - 0.95
