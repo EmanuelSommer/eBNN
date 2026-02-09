@@ -1,6 +1,6 @@
-# %%
-from bayesmates.config.data import Task
-import bayesmates.inference.metrics as bmetrics
+# %% install src from local dir - see Readme for details
+from src.config.data import Task
+import src.inference.metrics as bmetrics
 import plotnine as pn
 import jax.numpy as jnp
 import pandas as pd
