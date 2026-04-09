@@ -1,6 +1,6 @@
-# %%
-from bayesmates.config.data import Task
-import bayesmates.inference.metrics as bmetrics
+# %%  install src from local dir - see Readme for details
+from src.config.data import Task
+import src.inference.metrics as bmetrics
 import plotnine as pn
 import jax.numpy as jnp
 import pandas as pd
@@ -13,13 +13,13 @@ from tqdm import tqdm
 # %%
 reference = "first_sample"  # "de" or "first_sample"
 # %% ViT on imagenette with psmile
-predsaver_obj = jnp.load("results/vit_imagenette_psmile0_predsaver_sampling.npz", allow_pickle=True)
-predsaver_obj_de = jnp.load("results/vit_imagenette_psmile0_predsaver_de.npz", allow_pickle=True)
-exp_id = "vit_imagenette_psmile0"
+# predsaver_obj = jnp.load("results/vit_imagenette_psmile0_predsaver_sampling.npz", allow_pickle=True)
+# predsaver_obj_de = jnp.load("results/vit_imagenette_psmile0_predsaver_de.npz", allow_pickle=True)
+# exp_id = "vit_imagenette_psmile0"
 # %% Resnet7 on cifar10 with psmile
-# predsaver_obj = jnp.load("results/resnet7_cifar10_psmile0_predsaver_sampling.npz", allow_pickle=True)
-# predsaver_obj_de = jnp.load("results/resnet7_cifar10_psmile0_predsaver_de.npz", allow_pickle=True)
-# exp_id = "resnet7_cifar10_psmile0"
+predsaver_obj = jnp.load("results/resnet7_cifar10_psmile0_predsaver_sampling.npz", allow_pickle=True)
+predsaver_obj_de = jnp.load("results/resnet7_cifar10_psmile0_predsaver_de.npz", allow_pickle=True)
+exp_id = "resnet7_cifar10_psmile0"
 # %% MLP on income with mile
 # predsaver_obj = jnp.load("results/mlp_income_mile_predsaver_sampling.npz", allow_pickle=True)
 # predsaver_obj_de = jnp.load("results/mlp_income_mile_predsaver_de.npz", allow_pickle=True)
@@ -172,23 +172,25 @@ evalues_chainwise_df["chain"] = evalues_chainwise_df["chain"].astype(float)
 evalues_chainwise_df
 # %%
 plot = (pn.ggplot(evalues_chainwise_df) +
- pn.aes(x="num_samples", y="e_value", group="chain") +
- pn.geom_line(alpha=0.7, color="#324b94") +
- pn.geom_hline(yintercept=100, linetype="dashed", color="#4c915c", size=1) +
- pn.scale_y_log10(breaks=[0, 1, 100], labels=["0", "1", "100 ($\\alpha = 0.01$)"]) +
+ pn.aes(x="num_samples", y="e_value", group="chain", color="chain") +
+ pn.geom_line(alpha=0.6, size=0.5, show_legend=False) + # color="#324b94") +
+ pn.geom_hline(yintercept=100, linetype="solid", color="black", size=0.8) +
+ pn.geom_hline(yintercept=1, linetype="dashed", color="black", size=0.8) +
+ pn.scale_y_log10(breaks=[0, 1, 100], labels=["0", "", "$1/\\alpha$\n1"]) +
+ pn.scale_x_log10() +
  pn.labs(title="", y="E-value (log scale)", x="Number of samples") +
  pn.theme_minimal() + 
- pn.theme(
+ pn.theme(# no legend
+    legend_position=None,
     figure_size=(6,4),
-    text=pn.element_text(size=11),
-    axis_text=pn.element_text(size=10)
+    text=pn.element_text(size=20),
+    axis_text=pn.element_text(size=18)
  )
 )
 
 # save the plot as pdf
 plot.save(f"results/plots/{exp_id}_{reference}_evalues_chainwise.pdf", dpi=300)
 plot
-
 # %% now calculate the early stopping sample sizes per chain for alphas in [0.01, 0.05, 0.1]
 alphas = [0.001, 0.01, 0.05]
 early_stopping_samples = {alpha: [] for alpha in alphas}
@@ -366,6 +368,7 @@ de_band_df = (
     .drop(columns="_k")
 )
 
+# %%
 plot = (pn.ggplot(summary_early_stopping_long_df) +
  pn.aes(x="alpha", y="mean_value") +
  pn.geom_hline(data=de_lines_df, mapping=pn.aes(yintercept="de_mean"),
@@ -378,9 +381,11 @@ plot = (pn.ggplot(summary_early_stopping_long_df) +
  pn.facet_wrap("~ metric_label", scales="free_y", ncol=2) +
  pn.labs(title="", x="Early stopping level ($\\alpha$)", y="Value ($\\pm$ SD)", color="Mean early\nstopping samples") +
  pn.theme_minimal() +
- pn.theme(legend_position="bottom", figure_size=(8,4),
-    text=pn.element_text(size=11),
-    axis_text=pn.element_text(size=10)) +
+ pn.theme(legend_position="bottom", figure_size=(9,4),
+    text=pn.element_text(size=20),
+    legend_title=pn.element_text(size=18),
+    legend_text_colorbar=pn.element_text(size=16),
+    axis_text=pn.element_text(size=16)) +
  pn.scale_color_gradient(low="#e04f93", high="#032459")
 )
 
@@ -486,9 +491,11 @@ plot = (pn.ggplot(ensemble_results_long_df) +
  pn.labs(title="", x="Early stopping level ($\\alpha$)", y="Value", size="Ensemble members") +
  pn.theme_minimal() +
  pn.theme(
-    legend_position="bottom", figure_size=(7,3),
-    text=pn.element_text(size=11),
-    axis_text=pn.element_text(size=10)
+    legend_position="bottom", figure_size=(9,4),
+    text=pn.element_text(size=20),
+    axis_text=pn.element_text(size=16),
+    legend_title=pn.element_text(size=18),
+    legend_text=pn.element_text(size=16),
 )
 )
 
